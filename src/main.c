@@ -12,6 +12,8 @@ unsigned char **queue;
 
 void creat_queue(unsigned char **queue, int size, int pagesize) {
     int ret;
+    
+    queue = (unsigned char **)malloc(sizeof(unsigned char *) * size);
     for (int i = 0; i < size; i++) {
         ret = posix_memalign((void **)&queue[i], pagesize, 40960);
         if (ret != 0) {
@@ -48,7 +50,9 @@ int main(int argc, char **argv) {
     creat_queue(queue, QUEUESIZE, pagesize);
 
     // 创建服务器线程
-    // pthread_create(&ctx.server_thread, NULL, run_server, &ctx);
+    if (ctx.host_id != 0) {
+        pthread_create(&ctx.server_thread, NULL, run_server, &ctx);
+    }
 
     // 创建客户端线程（如果需要）
     int num_clients = ctx.total_hosts - ctx.host_id - 1;
@@ -62,7 +66,9 @@ int main(int argc, char **argv) {
     }
 
     // 等待服务器线程
-    //pthread_join(ctx.server_thread, NULL);
+    if (ctx.host_id != 0) {
+        pthread_join(ctx.server_thread, NULL);
+    }
 
     // 等待所有客户端线程
     if (num_clients > 0) {
