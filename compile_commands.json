@@ -1,0 +1,34 @@
+[
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-Wno-unused-variable",
+      "-Wall",
+      "-g",
+      "-Iinclude",
+      "-c",
+      "-o",
+      "src/main.o",
+      "src/main.c"
+    ],
+    "directory": "/home/yyp/rdma-connection",
+    "file": "/home/yyp/rdma-connection/src/main.c",
+    "output": "/home/yyp/rdma-connection/src/main.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-Wno-unused-variable",
+      "-Wall",
+      "-g",
+      "-Iinclude",
+      "-c",
+      "-o",
+      "rdma-mesh/rdma_mesh.o",
+      "rdma-mesh/rdma_mesh.c"
+    ],
+    "directory": "/home/yyp/rdma-connection",
+    "file": "/home/yyp/rdma-connection/rdma-mesh/rdma_mesh.c",
+    "output": "/home/yyp/rdma-connection/rdma-mesh/rdma_mesh.o"
+  }
+]
