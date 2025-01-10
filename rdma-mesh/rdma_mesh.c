@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -13,6 +14,8 @@
 #define DEFAULT_PORT 40000
 #define MAX_CONNECTIONS (MAX_HOSTS * (MAX_HOSTS-1) / 2)
 
+struct rdma_cm_id cm_id_array[MAX_HOSTS];
+
 void *run_server(void *arg) {
     struct host_context *ctx = (struct host_context *)arg;
     struct rdma_cm_id *listener = NULL;
@@ -20,7 +23,11 @@ void *run_server(void *arg) {
     struct sockaddr_in addr;
     struct rdma_cm_event *event = NULL;
     struct ibv_qp_init_attr qp_attr;
+    struct rdma_conn_param conn_param;  // 在 rdma_accept 时传递给客户端的 conn param 
     int ret;
+    int completion_num = 0;     // 已建连的数目
+    int client_id;              // 用于暂存发起连接的客户端标识
+
 
     // 创建事件通道
     ec = rdma_create_event_channel();
@@ -40,7 +47,7 @@ void *run_server(void *arg) {
     memset(&addr, 0, sizeof(addr));
     addr.sin_family = AF_INET;
     addr.sin_port = htons(DEFAULT_PORT + ctx->host_id);
-    addr.sin_addr.s_addr = inet_addr("192.168.103.1");
+    addr.sin_addr.s_addr = inet_addr("192.168.103.1");  // 本机地址
 
     ret = rdma_bind_addr(listener, (struct sockaddr *)&addr);
     if (ret) {
@@ -65,6 +72,11 @@ void *run_server(void *arg) {
 
         switch (event->event) {
             case RDMA_CM_EVENT_CONNECT_REQUEST:
+                // 获取 client 发来的其私有数据（即其 id 号），当然也可以一个 struct (条件是 < 56 bytes)
+                client_id = *(int *)event->param.conn.private_data;
+                // 测试是否收到
+                printf("Received Connect Request from host %d\n", client_id);
+
                 // 处理连接请求
                 memset(&qp_attr, 0, sizeof(qp_attr));
                 qp_attr.qp_context = NULL;
@@ -79,7 +91,15 @@ void *run_server(void *arg) {
 
                 ret = rdma_create_qp(event->id, NULL, &qp_attr);
                 if (!ret) {
-                    ret = rdma_accept(event->id, NULL);
+                    // server 可将自己的想要传的私有数据传递给 client
+                    memset(&conn_param, 0, sizeof(conn_param));
+                    conn_param.private_data = &(ctx->host_id);
+                    conn_param.private_data_len = sizeof(ctx->host_id);
+                    conn_param.responder_resources = 4;
+                    conn_param.initiator_depth = 1;
+                    conn_param.rnr_retry_count = 7;
+
+                    ret = rdma_accept(event->id, &conn_param);
                     if (!ret) {
                         printf("Host %d: Accepted connection\n", ctx->host_id);
                     }
@@ -88,6 +108,11 @@ void *run_server(void *arg) {
 
             case RDMA_CM_EVENT_ESTABLISHED:
                 printf("Host %d: Connection established\n", ctx->host_id);
+                completion_num++;
+                if (completion_num == ctx->host_id) {   
+                    // server 完成了和 (0.. host_id-1) 主机的建连，可以结束了
+                    return NULL;
+                }
                 break;
 
             case RDMA_CM_EVENT_DISCONNECTED:
@@ -122,6 +147,7 @@ void *run_client(void *arg) {
     struct ibv_qp_init_attr qp_attr;
     int target_host = *(int *)arg;
     int ret;
+    struct rdma_conn_param conn_param;
 
     // 创建事件通道
     ec = rdma_create_event_channel();
@@ -141,7 +167,7 @@ void *run_client(void *arg) {
     memset(&addr, 0, sizeof(addr));
     addr.sin_family = AF_INET;
     addr.sin_port = htons(DEFAULT_PORT + target_host);
-    addr.sin_addr.s_addr = inet_addr("192.168.103.2");  // 这里假设所有主机都在本地运行
+    addr.sin_addr.s_addr = inet_addr("192.168.103.2");  // 目标主机地址
 
     ret = rdma_resolve_addr(id, NULL, (struct sockaddr *)&addr, 2000);
     if (ret) {
@@ -174,12 +200,32 @@ void *run_client(void *arg) {
 
                 ret = rdma_create_qp(event->id, NULL, &qp_attr);
                 if (!ret) {
-                    ret = rdma_connect(event->id, NULL);
+                    memset(&conn_param, 0, sizeof(conn_param));
+                    
+                    // 设置私有数据（即发起连接方的身份标识）
+                    conn_param.private_data = &ctx->host_id;
+                    conn_param.private_data_len = sizeof(ctx->host_id);
+                    conn_param.initiator_depth = 1;
+
+                    // 设置资源参数
+                    conn_param.responder_resources = 2;     // 可同时处理 2 个 RDMA Read
+                    conn_param.initiator_depth = 2;         // 可以发起 2 个并发的 RDMA Read
+                    conn_param.flow_control = 1;            // 启用流控
+                    conn_param.retry_count = 7;             // 发送重传 7 次
+                    conn_param.rnr_retry_count = 7;         // RNR 重传 7 次
+
+                    // 不使用 SRQ ，使用系统分配的 QP 号
+                    conn_param.srq = 0;
+                    conn_param.qp_num = 0;
+
+                    ret = rdma_connect(event->id, &conn_param);
                 }
                 break;
 
             case RDMA_CM_EVENT_ESTABLISHED:
                 printf("Host %d: Connected to host %d\n", ctx->host_id, target_host);
+                // 这里可以通过 event->param.conn.private_data 查看 server 返回的私有数据
+                printf("Connection setup with host %d\n", *(int *)event->param.conn.private_data);
                 goto cleanup;
 
             case RDMA_CM_EVENT_DISCONNECTED:

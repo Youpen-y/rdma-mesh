@@ -12,7 +12,7 @@ unsigned char **queue;
 
 void creat_queue(unsigned char **queue, int size, int pagesize) {
     int ret;
-    
+
     queue = (unsigned char **)malloc(sizeof(unsigned char *) * size);
     for (int i = 0; i < size; i++) {
         ret = posix_memalign((void **)&queue[i], pagesize, 40960);
@@ -28,6 +28,9 @@ void free_queue(unsigned char **queue, int size) {
         free(queue[i]);
     }
 }
+
+
+
 
 int main(int argc, char **argv) {
     if (argc != 3) {
