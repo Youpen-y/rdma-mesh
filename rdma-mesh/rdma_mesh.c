@@ -110,6 +110,7 @@ void *run_server(void *arg) {
 
             case RDMA_CM_EVENT_ESTABLISHED:
                 printf("Host %d: Connection established\n", ctx->host_id);
+                cm_id_array[client_id] = *(event->id);
                 completion_num++;
                 if (completion_num == ctx->host_id) {   
                     // server 完成了和 (0.. host_id-1) 主机的建连，可以结束了
@@ -225,6 +226,7 @@ void *run_client(void *arg) {
 
             case RDMA_CM_EVENT_ESTABLISHED:
                 printf("Host %d: Connected to host %d\n", ctx.host_id, target_host);
+                cm_id_array[target_host] = *(event->id);
                 // 这里可以通过 event->param.conn.private_data 查看 server 返回的私有数据
                 printf("Connection setup with host %d\n", *(int *)event->param.conn.private_data);
                 goto cleanup;

@@ -38,6 +38,8 @@ void free_queue(unsigned char **queue, int size) {
 }
 
 
+
+
 int main(int argc, char **argv) {
     if (argc != 3) {
         fprintf(stderr, "Usage: %s <host_id> <total_hosts>\n", argv[0]);
