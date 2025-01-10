@@ -8,12 +8,17 @@
 // queue capacity
 #define QUEUESIZE 16
 
-unsigned char **queue;
+unsigned char **msg_queue;
 
-void creat_queue(unsigned char **queue, int size, int pagesize) {
+unsigned char **creat_queue(int size, int pagesize) {
     int ret;
 
-    queue = (unsigned char **)malloc(sizeof(unsigned char *) * size);
+    unsigned char **queue = (unsigned char **)malloc(sizeof(unsigned char *) * size);
+    if (queue == NULL) {
+        fprintf(stderr, "Failed to allocated memory for queue!");
+        exit(-1);
+    }
+
     for (int i = 0; i < size; i++) {
         ret = posix_memalign((void **)&queue[i], pagesize, 40960);
         if (ret != 0) {
@@ -21,15 +26,15 @@ void creat_queue(unsigned char **queue, int size, int pagesize) {
             exit(-1);
         }
     }
+    return queue;
 }
 
 void free_queue(unsigned char **queue, int size) {
     for (int i = 0; i < size; i++) {
         free(queue[i]);
     }
+    free(queue);
 }
-
-
 
 
 int main(int argc, char **argv) {
@@ -50,7 +55,7 @@ int main(int argc, char **argv) {
     // 获取 pagesize 大小
     long pagesize = sysconf(_SC_PAGESIZE);
 
-    creat_queue(queue, QUEUESIZE, pagesize);
+    msg_queue = creat_queue(QUEUESIZE, pagesize);
 
     // 创建服务器线程
     if (ctx.host_id != 0) {
@@ -81,6 +86,6 @@ int main(int argc, char **argv) {
         free(ctx.client_threads);
     }
 
-    free_queue(queue, QUEUESIZE);
+    free_queue(msg_queue, QUEUESIZE);
     return 0;
 }
