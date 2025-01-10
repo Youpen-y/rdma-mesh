@@ -20,7 +20,6 @@ struct host_context {
 
 void *run_server(void *arg);
 
-
 void *run_client(void *arg);
 
 #endif

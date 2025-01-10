@@ -9,6 +9,7 @@
 #define QUEUESIZE 16
 
 unsigned char **msg_queue;
+struct host_context ctx = {0};
 
 unsigned char **creat_queue(int size, int pagesize) {
     int ret;
@@ -43,7 +44,6 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    struct host_context ctx;
     ctx.host_id = atoi(argv[1]);
     ctx.total_hosts = atoi(argv[2]);
 

@@ -14,6 +14,8 @@
 #define DEFAULT_PORT 40000
 #define MAX_CONNECTIONS (MAX_HOSTS * (MAX_HOSTS-1) / 2)
 
+extern struct host_context ctx;
+
 struct rdma_cm_id cm_id_array[MAX_HOSTS];
 
 void *run_server(void *arg) {
@@ -139,27 +141,26 @@ cleanup:
 }
 
 void *run_client(void *arg) {
-    struct host_context *ctx = (struct host_context *)arg;
+    int target_host = *(int *)arg;
     struct rdma_cm_id *id = NULL;
     struct rdma_event_channel *ec = NULL;
     struct sockaddr_in addr;
     struct rdma_cm_event *event = NULL;
     struct ibv_qp_init_attr qp_attr;
-    int target_host = *(int *)arg;
     int ret;
     struct rdma_conn_param conn_param;
 
     // 创建事件通道
     ec = rdma_create_event_channel();
     if (!ec) {
-        fprintf(stderr, "Host %d: Failed to create event channel for client\n", ctx->host_id);
+        fprintf(stderr, "Host %d: Failed to create event channel for client[%d]\n", ctx.host_id, target_host);
         return NULL;
     }
 
     // 创建RDMA CM ID
     ret = rdma_create_id(ec, &id, NULL, RDMA_PS_TCP);
     if (ret) {
-        fprintf(stderr, "Host %d: Failed to create RDMA CM ID for client\n", ctx->host_id);
+        fprintf(stderr, "Host %d: Failed to create RDMA CM ID for client[%d]\n", ctx.host_id, target_host);
         goto cleanup;
     }
 
@@ -171,7 +172,7 @@ void *run_client(void *arg) {
 
     ret = rdma_resolve_addr(id, NULL, (struct sockaddr *)&addr, 2000);
     if (ret) {
-        fprintf(stderr, "Host %d: Failed to resolve address for host %d\n", ctx->host_id, target_host);
+        fprintf(stderr, "Host %d: Failed to resolve address for host %d\n", ctx.host_id, target_host);
         goto cleanup;
     }
 
@@ -203,8 +204,8 @@ void *run_client(void *arg) {
                     memset(&conn_param, 0, sizeof(conn_param));
                     
                     // 设置私有数据（即发起连接方的身份标识）
-                    conn_param.private_data = &ctx->host_id;
-                    conn_param.private_data_len = sizeof(ctx->host_id);
+                    conn_param.private_data = &ctx.host_id;
+                    conn_param.private_data_len = sizeof(ctx.host_id);
                     conn_param.initiator_depth = 1;
 
                     // 设置资源参数
@@ -223,7 +224,7 @@ void *run_client(void *arg) {
                 break;
 
             case RDMA_CM_EVENT_ESTABLISHED:
-                printf("Host %d: Connected to host %d\n", ctx->host_id, target_host);
+                printf("Host %d: Connected to host %d\n", ctx.host_id, target_host);
                 // 这里可以通过 event->param.conn.private_data 查看 server 返回的私有数据
                 printf("Connection setup with host %d\n", *(int *)event->param.conn.private_data);
                 goto cleanup;
