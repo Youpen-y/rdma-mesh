@@ -3,12 +3,25 @@
 #include <unistd.h>
 #include <pthread.h>
 #include <infiniband/verbs.h>
+#include <rdma/rdma_cma.h>
+#include <rdma/rdma_verbs.h>
 #include "rdma_mesh.h"
 
 // queue capacity
+#define MAX_HOSTS 16
+
 #define QUEUESIZE 16
 
-unsigned char **msg_queue;
+#define MR_SIZE 16
+
+extern struct rdma_cm_id cm_id_array[MAX_HOSTS];
+
+unsigned char **inqueue;
+unsigned char **outqueue;
+
+struct ibv_mr *in_mr[MR_SIZE];
+struct ibv_mr *out_mr[MR_SIZE];
+
 struct host_context ctx = {0};
 
 unsigned char **creat_queue(int size, int pagesize) {
@@ -38,8 +51,6 @@ void free_queue(unsigned char **queue, int size) {
 }
 
 
-
-
 int main(int argc, char **argv) {
     if (argc != 3) {
         fprintf(stderr, "Usage: %s <host_id> <total_hosts>\n", argv[0]);
@@ -57,7 +68,14 @@ int main(int argc, char **argv) {
     // 获取 pagesize 大小
     long pagesize = sysconf(_SC_PAGESIZE);
 
-    msg_queue = creat_queue(QUEUESIZE, pagesize);
+    // 构建输入和输出队列
+    inqueue = creat_queue(QUEUESIZE, pagesize);
+    outqueue = creat_queue(QUEUESIZE, pagesize);
+
+    // for (int i = 0; i < MR_SIZE; i++) {
+    //     in_mr[i] = rdma_reg_msgs(&cm_id_array[ctx.host_id], inqueue[i], 40960);
+    //     out_mr[i] = rdma_reg_msgs(&cm_id_array[ctx.host_id], outqueue[i], 40960);
+    // }
 
     // 创建服务器线程
     if (ctx.host_id != 0) {
@@ -88,6 +106,7 @@ int main(int argc, char **argv) {
         free(ctx.client_threads);
     }
 
-    free_queue(msg_queue, QUEUESIZE);
+    free_queue(inqueue, QUEUESIZE);
+    free_queue(outqueue, QUEUESIZE);
     return 0;
 }

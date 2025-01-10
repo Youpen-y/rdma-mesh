@@ -11,12 +11,13 @@
 #include "rdma_mesh.h"
 
 #define MAX_HOSTS 16
+
 #define DEFAULT_PORT 40000
 #define MAX_CONNECTIONS (MAX_HOSTS * (MAX_HOSTS-1) / 2)
 
 extern struct host_context ctx;
 
-struct rdma_cm_id cm_id_array[MAX_HOSTS];
+struct rdma_cm_id cm_id_array[MAX_HOSTS] = {0};
 
 void *run_server(void *arg) {
     struct host_context *ctx = (struct host_context *)arg;
@@ -79,7 +80,7 @@ void *run_server(void *arg) {
                 // 测试是否收到
                 printf("Received Connect Request from host %d\n", client_id);
 
-                // 处理连接请求
+                // 设置 QP 属性，这里可以指定通信模式
                 memset(&qp_attr, 0, sizeof(qp_attr));
                 qp_attr.qp_context = NULL;
                 qp_attr.cap.max_send_wr = 10;
@@ -158,6 +159,8 @@ void *run_client(void *arg) {
         return NULL;
     }
 
+    // 简单的重传（之后再修改）
+retry:
     // 创建RDMA CM ID
     ret = rdma_create_id(ec, &id, NULL, RDMA_PS_TCP);
     if (ret) {
@@ -169,7 +172,7 @@ void *run_client(void *arg) {
     memset(&addr, 0, sizeof(addr));
     addr.sin_family = AF_INET;
     addr.sin_port = htons(DEFAULT_PORT + target_host);
-    addr.sin_addr.s_addr = inet_addr("192.168.103.2");  // 目标主机地址
+    addr.sin_addr.s_addr = inet_addr("192.168.103.2");
 
     ret = rdma_resolve_addr(id, NULL, (struct sockaddr *)&addr, 2000);
     if (ret) {
@@ -219,11 +222,15 @@ void *run_client(void *arg) {
                     // 不使用 SRQ ，使用系统分配的 QP 号
                     conn_param.srq = 0;
                     conn_param.qp_num = 0;
-
+           
                     ret = rdma_connect(event->id, &conn_param);
                 }
                 break;
-
+            case RDMA_CM_EVENT_CONNECT_ERROR:
+            case RDMA_CM_EVENT_UNREACHABLE:
+            case RDMA_CM_EVENT_REJECTED:    // 当 client 早于远端 server 建立时，返回 RDMA_CM_EVENT_
+                printf("Connect to host %d failed, event: %s", target_host, rdma_event_str(event->event));
+                goto retry;
             case RDMA_CM_EVENT_ESTABLISHED:
                 printf("Host %d: Connected to host %d\n", ctx.host_id, target_host);
                 cm_id_array[target_host] = *(event->id);
