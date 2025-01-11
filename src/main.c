@@ -65,18 +65,6 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    // 获取 pagesize 大小
-    long pagesize = sysconf(_SC_PAGESIZE);
-
-    // 构建输入和输出队列
-    inqueue = creat_queue(QUEUESIZE, pagesize);
-    outqueue = creat_queue(QUEUESIZE, pagesize);
-
-    // for (int i = 0; i < MR_SIZE; i++) {
-    //     in_mr[i] = rdma_reg_msgs(&cm_id_array[ctx.host_id], inqueue[i], 40960);
-    //     out_mr[i] = rdma_reg_msgs(&cm_id_array[ctx.host_id], outqueue[i], 40960);
-    // }
-
     // 创建服务器线程
     if (ctx.host_id != 0) {
         pthread_create(&ctx.server_thread, NULL, run_server, &ctx);
@@ -105,6 +93,23 @@ int main(int argc, char **argv) {
         }
         free(ctx.client_threads);
     }
+
+    // 获取 pagesize 大小
+    long pagesize = sysconf(_SC_PAGESIZE);
+
+    // 构建输入和输出队列
+    inqueue = creat_queue(QUEUESIZE, pagesize);
+    outqueue = creat_queue(QUEUESIZE, pagesize);
+
+    // 注册内存区域
+    for (int i = 0; i < MR_SIZE; i++) {
+        in_mr[i] = rdma_reg_msgs(&cm_id_array[ctx.host_id], inqueue[i], 40960);
+        out_mr[i] = rdma_reg_msgs(&cm_id_array[ctx.host_id], outqueue[i], 40960);
+    }
+
+    
+
+
 
     free_queue(inqueue, QUEUESIZE);
     free_queue(outqueue, QUEUESIZE);

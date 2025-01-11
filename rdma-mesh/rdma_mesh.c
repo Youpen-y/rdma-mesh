@@ -115,7 +115,7 @@ void *run_server(void *arg) {
                 completion_num++;
                 if (completion_num == ctx->host_id) {   
                     // server 完成了和 (0.. host_id-1) 主机的建连，可以结束了
-                    return NULL;
+                    goto cleanup;
                 }
                 break;
 
@@ -149,8 +149,8 @@ void *run_client(void *arg) {
     struct sockaddr_in addr;
     struct rdma_cm_event *event = NULL;
     struct ibv_qp_init_attr qp_attr;
-    int ret;
     struct rdma_conn_param conn_param;
+    int ret;
 
     // 创建事件通道
     ec = rdma_create_event_channel();
@@ -226,11 +226,11 @@ retry:
                     ret = rdma_connect(event->id, &conn_param);
                 }
                 break;
-            case RDMA_CM_EVENT_CONNECT_ERROR:
-            case RDMA_CM_EVENT_UNREACHABLE:
-            case RDMA_CM_EVENT_REJECTED:    // 当 client 早于远端 server 建立时，返回 RDMA_CM_EVENT_
+
+            case RDMA_CM_EVENT_REJECTED:    // 当 client 早于远端 server 建立时，返回 RDMA_CM_EVENT_REJECTED
                 printf("Connect to host %d failed, event: %s", target_host, rdma_event_str(event->event));
                 goto retry;
+
             case RDMA_CM_EVENT_ESTABLISHED:
                 printf("Host %d: Connected to host %d\n", ctx.host_id, target_host);
                 cm_id_array[target_host] = *(event->id);
@@ -238,6 +238,8 @@ retry:
                 printf("Connection setup with host %d\n", *(int *)event->param.conn.private_data);
                 goto cleanup;
 
+            case RDMA_CM_EVENT_CONNECT_ERROR:
+            case RDMA_CM_EVENT_UNREACHABLE:
             case RDMA_CM_EVENT_DISCONNECTED:
                 goto cleanup;
 
