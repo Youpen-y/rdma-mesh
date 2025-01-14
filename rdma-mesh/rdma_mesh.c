@@ -258,7 +258,7 @@ void *run_client(void *arg) {
                     goto next_try;
 
                 case RDMA_CM_EVENT_ESTABLISHED:
-                    printf("After retried %d connect, Host %d: Connected to host %d\n", retry_count, ctx.host_id, target_host);
+                    printf("\nAfter retried %d connect, Host %d: Connected to host %d\n", retry_count, ctx.host_id, target_host);
                     cm_id_array[target_host] = *(event->id);
                     // 这里可以通过 event->param.conn.private_data 查看 server 返回的私有数据
                     printf("Connection setup with host %d\n", *(int *)event->param.conn.private_data);

@@ -40,12 +40,16 @@ void* rdma_client_thread(void *arg) {
         }
         
         // 等待发送完成
-        ret = ibv_poll_cq(cm_id_array[1].qp->send_cq, 1, &wc);
-        if (ret < 0) {
-            printf("Failed to poll send CQ\n");
-            continue;
-        } else if (ret == 0) {
-            continue;
+        while(1){
+            ret = ibv_poll_cq(cm_id_array[1].qp->send_cq, 1, &wc);
+            if (ret < 0) {
+                printf("Failed to poll send CQ\n");
+                continue;
+            } else if (ret == 0) {
+                continue;
+            }else {
+                break;
+            }
         }
         
         // 处理发送完成
