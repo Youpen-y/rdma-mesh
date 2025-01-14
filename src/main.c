@@ -2,10 +2,12 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <pthread.h>
+#include <semaphore.h>
 #include <infiniband/verbs.h>
 #include <rdma/rdma_cma.h>
 #include <rdma/rdma_verbs.h>
 #include "rdma_mesh.h"
+#include "rdma_comm.h"
 
 // queue capacity
 #define MAX_HOSTS 16
@@ -13,6 +15,11 @@
 #define QUEUESIZE 16
 
 #define MR_SIZE 16
+
+pthread_t rdma_client_tid;
+pthread_t rdma_listen_tid;
+pthread_t rdma_server_tid;
+
 
 extern struct rdma_cm_id cm_id_array[MAX_HOSTS];
 
@@ -107,11 +114,13 @@ int main(int argc, char **argv) {
         out_mr[i] = rdma_reg_msgs(&cm_id_array[1], outqueue[i], 40960);
     }
 
-    
+    if (sem_init(&recv_sem, 0, 0) != 0) {
+        perror("Failed to initialize semaphore");
+        return -1;
+    }
 
-
-
-    free_queue(inqueue, QUEUESIZE);
-    free_queue(outqueue, QUEUESIZE);
+    pthread_create(&rdma_listen_tid, NULL, rdma_listen, NULL);
+    pthread_create(&rdma_client_tid, NULL, rdma_client, NULL);
+    pthread_create(&rdma_server_tid, NULL, rdma_server, NULL);
     return 0;
 }
