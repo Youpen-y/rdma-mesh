@@ -61,13 +61,18 @@ void* rdma_listen_thread(void *arg) {
                 printf("Recv completion failed with status: %d\n", wc.status);
             }
             recv_num++;
+            atomic_fetch_sub(&(inqueue.free_value), 1);
+            atomic_fetch_add(&(inqueue.busy_value), 1);
+            if (atomic_load(&(inqueue.busy_value)) > 0) {
+                pthread_cond_signal(&cond_server);
+            }
         }
-        atomic_fetch_sub(&(inqueue.free_value), batching_num);
-        atomic_fetch_add(&(inqueue.busy_value), batching_num);
+        // atomic_fetch_sub(&(inqueue.free_value), batching_num);
+        // atomic_fetch_add(&(inqueue.busy_value), batching_num);
 
-        if (atomic_load(&(inqueue.busy_value)) > 0) {
-            pthread_cond_signal(&cond_server);
-        }
+        // if (atomic_load(&(inqueue.busy_value)) > 0) {
+        //     pthread_cond_signal(&cond_server);
+        // }
 
         pthread_mutex_unlock(&lock_listen);
     }

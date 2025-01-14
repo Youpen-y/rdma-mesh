@@ -143,7 +143,7 @@ int main(int argc, char **argv) {
         generate_random_string((char *)msg.data, RANDOM_MSG_SIZE);
         
         move_msg_to_outqueue(&msg, &outqueue);
-        sleep(2);
+        sleep(1);
     }
     
     return 0;

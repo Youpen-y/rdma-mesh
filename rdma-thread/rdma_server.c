@@ -9,8 +9,8 @@ pthread_cond_t cond_server = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t lock_server = PTHREAD_MUTEX_INITIALIZER;
 
 void* rdma_server_thread(void *arg) {
-    pthread_mutex_lock(&lock_server);
     while (1) {
+        pthread_mutex_lock(&lock_server);
         if (atomic_load(&(inqueue.busy_value)) == 0) {
             pthread_cond_wait(&cond_server, &lock_server);
         }
