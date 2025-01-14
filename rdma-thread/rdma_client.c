@@ -6,7 +6,7 @@
 #include <infiniband/verbs.h>
 #include "rdma_comm.h"
 
-void* send_thread(void *arg) {
+void* rdma_client_thread(void *arg) {
     struct ibv_send_wr *wr_list = malloc(batching_num * sizeof(struct ibv_send_wr));
     struct ibv_sge *sge_list = malloc(batching_num * sizeof(struct ibv_sge));
     struct ibv_wc wc;

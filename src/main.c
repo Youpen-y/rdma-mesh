@@ -119,8 +119,8 @@ int main(int argc, char **argv) {
         return -1;
     }
 
-    pthread_create(&rdma_listen_tid, NULL, rdma_listen, NULL);
-    pthread_create(&rdma_client_tid, NULL, rdma_client, NULL);
-    pthread_create(&rdma_server_tid, NULL, rdma_server, NULL);
+    pthread_create(&rdma_listen_tid, NULL, rdma_listen_thread, NULL);
+    pthread_create(&rdma_client_tid, NULL, rdma_client_thread, NULL);
+    pthread_create(&rdma_server_tid, NULL, rdma_server_thread, NULL);
     return 0;
 }

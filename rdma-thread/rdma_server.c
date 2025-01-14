@@ -3,7 +3,7 @@
 #include <semaphore.h>
 
 
-void* rdma_server(void *arg) {
+void* rdma_server_thread(void *arg) {
     int ret;
     
     while (1) {

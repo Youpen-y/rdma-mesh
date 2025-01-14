@@ -15,7 +15,7 @@ static void handle_recv_completion(struct ibv_wc *wc) {
 }
 
 // 下发接收WR的线程函数
-void* rdma_listen(void *arg) {
+void* rdma_listen_thread(void *arg) {
     struct ibv_recv_wr *wr_list = malloc(batching_num * sizeof(struct ibv_recv_wr));
     struct ibv_sge *sge_list = malloc(batching_num * sizeof(struct ibv_sge));
     struct ibv_wc wc;
