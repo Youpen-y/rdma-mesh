@@ -6,6 +6,7 @@
 #include <infiniband/verbs.h>
 #include <rdma/rdma_cma.h>
 #include <rdma/rdma_verbs.h>
+#include "tools.h"
 #include "rdma_mesh.h"
 #include "rdma_comm.h"
 #include "msg_queue.h"
@@ -17,7 +18,9 @@
 
 #define MR_SIZE 16
 
-#define RANDOM_MSG_SIZE 100
+#define RANDOM_MSG_SIZE 10
+
+FILE *logfile;
 
 pthread_t rdma_client_tid;
 pthread_t rdma_listen_tid;
@@ -63,6 +66,10 @@ void free_queue(unsigned char **queue, int size) {
 
 
 int main(int argc, char **argv) {
+    if(open_logfile("jiajia.log")) {
+        log_err("Unable to open jiajia.log");
+        exit(-1);
+    }
     if (argc != 3) {
         fprintf(stderr, "Usage: %s <host_id> <total_hosts>\n", argv[0]);
         return 1;
@@ -136,7 +143,7 @@ int main(int argc, char **argv) {
         generate_random_string((char *)msg.data, RANDOM_MSG_SIZE);
         
         move_msg_to_outqueue(&msg, &outqueue);
-        sleep(20);
+        sleep(2);
     }
     
     return 0;
@@ -146,13 +153,16 @@ void generate_random_string(char *dest, size_t length) {
     const char charset[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"; // 字符集
     size_t charset_size = sizeof(charset) - 1; // 不包括末尾的 '\0'
 
+    // 获取时间和进程 ID 作为种子
+    srand((unsigned int)(time(NULL) ^ getpid()));
+
     // 生成随机字符串并存储到 dest 中
     for (size_t i = 0; i < length - 1; ++i) { // 留出最后一个字符的位置给 '\0'
         dest[i] = charset[rand() % charset_size];
     }
 
     dest[length - 1] = '\0'; // 添加字符串结束符
-    fprintf(stdout, "generate string: %s", dest);
+    fprintf(stdout, "generate string: %s\n", dest);
 }
 
 int move_msg_to_outqueue(jia_msg_t *msg, msg_queue_t *outqueue) {

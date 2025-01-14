@@ -3,3 +3,4 @@ mesh
 *.o
 .cache
 compile_commands.json
+jiajia.log

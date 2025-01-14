@@ -19,7 +19,7 @@ void* rdma_server_thread(void *arg) {
         printf("Received data at in_mr[%d] address %p: ", 
                    inqueue.head, in_mr[inqueue.head]->addr);
         // 假设数据是字符串
-        printf("%s\n", (char*)in_mr[inqueue.head]->addr);
+        printf("%s\n", ((jia_msg_t *)in_mr[inqueue.head]->addr)->data);
 
         inqueue.head = (inqueue.head + 1) % inqueue.size;
         atomic_fetch_sub(&(inqueue.busy_value), 1);

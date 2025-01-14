@@ -17,7 +17,7 @@ void* rdma_listen_thread(void *arg) {
     struct ibv_sge *sge_list = malloc(batching_num * sizeof(struct ibv_sge));
     struct ibv_wc wc;
     int i, ret;
-    
+    int j = 0;
     while (1) {
         pthread_mutex_lock(&lock_listen);
 
@@ -27,14 +27,15 @@ void* rdma_listen_thread(void *arg) {
 
         // 准备一批接收WR
         for (i = 0; i < batching_num; i++) {
-            sge_list[i].addr = (uint64_t)in_mr[i]->addr;
-            sge_list[i].length = in_mr[i]->length;
-            sge_list[i].lkey = in_mr[i]->lkey;
+            sge_list[i].addr = (uint64_t)in_mr[j]->addr;
+            sge_list[i].length = in_mr[j]->length;
+            sge_list[i].lkey = in_mr[j]->lkey;
             
             wr_list[i].sg_list = &sge_list[i];
             wr_list[i].num_sge = 1;
             wr_list[i].next = (i < batching_num - 1) ? &wr_list[i + 1] : NULL;
             wr_list[i].wr_id = i;
+            j = (j + 1) % inqueue.size;
         }
         
         // 批量下发接收WR
