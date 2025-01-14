@@ -14,11 +14,11 @@ void* rdma_server_thread(void *arg) {
         }
         
         // 打印接收到的数据
-        for (int i = 0; i < ctx.mr_count; i++) {
+        for (int i = 0; i < MR_SIZE; i++) {
             printf("Received data at in_mr[%d] address %p: ", 
-                   i, ctx.in_mr[i]->addr);
+                   i, in_mr[i]->addr);
             // 假设数据是字符串
-            printf("%s\n", (char*)ctx.in_mr[i]->addr);
+            printf("%s\n", (char*)in_mr[i]->addr);
         }
     }
     

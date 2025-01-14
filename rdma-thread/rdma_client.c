@@ -29,7 +29,7 @@ void* rdma_client_thread(void *arg) {
         
         // 批量下发发送WR
         struct ibv_send_wr *bad_wr;
-        ret = ibv_post_send(cm_id_array[1]->qp, wr_list, &bad_wr);
+        ret = ibv_post_send(cm_id_array[1].qp, wr_list, &bad_wr);
         if (ret) {
             printf("Failed to post send WR batch\n");
             continue;
@@ -38,7 +38,7 @@ void* rdma_client_thread(void *arg) {
         // 等待发送完成
         int send_num = 0;
         while (send_num < batching_num) {
-            ret = ibv_poll_cq(cm_id_array[1]->send_cq, 1, &wc);
+            ret = ibv_poll_cq(cm_id_array[1].send_cq, 1, &wc);
             if (ret < 0) {
                 printf("Failed to poll send CQ\n");
                 continue;

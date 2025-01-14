@@ -1,8 +1,8 @@
-#include "rdma_common.h"
 #include <semaphore.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <infiniband/verbs.h>
+#include "rdma_comm.h"
 
 // 处理接收完成的函数
 static void handle_recv_completion(struct ibv_wc *wc) {
