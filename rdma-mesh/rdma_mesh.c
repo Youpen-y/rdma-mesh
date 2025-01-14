@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <infiniband/verbs.h>
 #include <rdma/rdma_cma.h>
 #include <netdb.h>
 #include <sys/socket.h>
@@ -12,7 +13,6 @@
 #include "rdma_mesh.h"
 
 #define MAX_HOSTS 16
-
 #define DEFAULT_PORT 40000
 #define MAX_CONNECTIONS (MAX_HOSTS * (MAX_HOSTS-1) / 2)
 #define MAX_RETRY 1000
@@ -29,10 +29,10 @@ void *run_server(void *arg) {
     struct rdma_cm_event *event = NULL;
     struct ibv_qp_init_attr qp_attr;
     struct rdma_conn_param conn_param;  // 在 rdma_accept 时传递给客户端的 conn param 
+    struct ibv_comp_channel *io_completion_channel;
     int ret;
     int completion_num = 0;     // 已建连的数目
     int client_id;              // 用于暂存发起连接的客户端标识
-
 
     // 创建事件通道
     ec = rdma_create_event_channel();
@@ -82,6 +82,8 @@ void *run_server(void *arg) {
                 // 测试是否收到
                 printf("Received Connect Request from host %d\n", client_id);
 
+                io_completion_channel = ibv_create_comp_channel(event->id->verbs);
+
                 // 设置 QP 属性，这里可以指定通信模式
                 memset(&qp_attr, 0, sizeof(qp_attr));
                 qp_attr.qp_context = NULL;
@@ -91,8 +93,11 @@ void *run_server(void *arg) {
                 qp_attr.cap.max_recv_sge = 1;
                 qp_attr.cap.max_inline_data = 88;
                 qp_attr.qp_type = IBV_QPT_RC;
-                qp_attr.send_cq = ibv_create_cq(event->id->verbs, 10, NULL, NULL, 0);
-                qp_attr.recv_cq = qp_attr.send_cq;
+                qp_attr.send_cq = ibv_create_cq(event->id->verbs, 16, NULL, io_completion_channel, 0);
+                qp_attr.recv_cq = ibv_create_cq(event->id->verbs, 16, NULL, io_completion_channel, 0);
+
+                ibv_req_notify_cq(qp_attr.send_cq, 0);
+                ibv_req_notify_cq(qp_attr.recv_cq, 0);
 
                 ret = rdma_create_qp(event->id, NULL, &qp_attr);
                 if (!ret) {
@@ -152,6 +157,8 @@ void *run_client(void *arg) {
     struct rdma_cm_event *event = NULL;
     struct ibv_qp_init_attr qp_attr;
     struct rdma_conn_param conn_param;
+    struct ibv_comp_channel *io_completion_channel;
+
     int ret;
     bool retry_flag = true;
     int retry_count = 0;
@@ -196,6 +203,9 @@ void *run_client(void *arg) {
                     break;
 
                 case RDMA_CM_EVENT_ROUTE_RESOLVED:
+
+                    io_completion_channel = ibv_create_comp_channel(event->id->verbs);
+
                     memset(&qp_attr, 0, sizeof(qp_attr));
                     qp_attr.qp_context = NULL;
                     qp_attr.cap.max_send_wr = 10;
@@ -204,8 +214,11 @@ void *run_client(void *arg) {
                     qp_attr.cap.max_recv_sge = 1;
                     qp_attr.cap.max_inline_data = 64;
                     qp_attr.qp_type = IBV_QPT_RC;
-                    qp_attr.send_cq = ibv_create_cq(event->id->verbs, 10, NULL, NULL, 0);
-                    qp_attr.recv_cq = qp_attr.send_cq;
+                    qp_attr.send_cq = ibv_create_cq(event->id->verbs, 16, NULL, io_completion_channel, 0);
+                    qp_attr.recv_cq = ibv_create_cq(event->id->verbs, 16, NULL, io_completion_channel, 0);
+
+                    ibv_req_notify_cq(qp_attr.send_cq, 0);
+                    ibv_req_notify_cq(qp_attr.recv_cq, 0);                   
 
                     ret = rdma_create_qp(event->id, NULL, &qp_attr);
                     if (!ret) {
@@ -274,9 +287,6 @@ next_try:
 }   // while(retry_flag && retry_count < MAX_RETRY)
 
 cleanup:
-    if (id) {
-        rdma_destroy_id(id);
-    }
     if (ec) {
         rdma_destroy_event_channel(ec);
     }

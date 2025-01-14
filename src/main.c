@@ -8,6 +8,7 @@
 #include <rdma/rdma_verbs.h>
 #include "rdma_mesh.h"
 #include "rdma_comm.h"
+#include "msg_queue.h"
 
 // queue capacity
 #define MAX_HOSTS 16
@@ -16,20 +17,23 @@
 
 #define MR_SIZE 16
 
+#define RANDOM_MSG_SIZE 100
+
 pthread_t rdma_client_tid;
 pthread_t rdma_listen_tid;
 pthread_t rdma_server_tid;
 
-
+extern msg_queue_t inqueue;
+extern msg_queue_t outqueue;
 extern struct rdma_cm_id cm_id_array[MAX_HOSTS];
-
-unsigned char **inqueue;
-unsigned char **outqueue;
 
 struct ibv_mr *in_mr[MR_SIZE];
 struct ibv_mr *out_mr[MR_SIZE];
 
 struct host_context ctx = {0};
+
+void generate_random_string(char *dest, size_t length);
+int move_msg_to_outqueue(jia_msg_t *msg, msg_queue_t *outqueue);
 
 unsigned char **creat_queue(int size, int pagesize) {
     int ret;
@@ -101,17 +105,14 @@ int main(int argc, char **argv) {
         free(ctx.client_threads);
     }
 
-    // 获取 pagesize 大小
-    long pagesize = sysconf(_SC_PAGESIZE);
-
     // 构建输入和输出队列
-    inqueue = creat_queue(QUEUESIZE, pagesize);
-    outqueue = creat_queue(QUEUESIZE, pagesize);
+    init_msg_queue(&inqueue, QUEUESIZE);
+    init_msg_queue(&outqueue, QUEUESIZE);
 
     // 注册内存区域
     for (int i = 0; i < MR_SIZE; i++) {
-        in_mr[i] = rdma_reg_msgs(&cm_id_array[1], inqueue[i], 40960);
-        out_mr[i] = rdma_reg_msgs(&cm_id_array[1], outqueue[i], 40960);
+        in_mr[i] = rdma_reg_msgs(&cm_id_array[1], inqueue.queue[i], 40960);
+        out_mr[i] = rdma_reg_msgs(&cm_id_array[1], outqueue.queue[i], 40960);
     }
 
     if (sem_init(&recv_sem, 0, 0) != 0) {
@@ -122,5 +123,43 @@ int main(int argc, char **argv) {
     pthread_create(&rdma_listen_tid, NULL, rdma_listen_thread, NULL);
     pthread_create(&rdma_client_tid, NULL, rdma_client_thread, NULL);
     pthread_create(&rdma_server_tid, NULL, rdma_server_thread, NULL);
+    
+    jia_msg_t msg;
+    while(1) {
+        msg.frompid = 0;
+        msg.topid = 1;
+        msg.temp = -1;
+        msg.seqno = 0;
+        msg.index = 0;
+        msg.scope = 0;
+        msg.size = 16;
+        generate_random_string((char *)msg.data, RANDOM_MSG_SIZE);
+        
+        move_msg_to_outqueue(&msg, &outqueue);
+        sleep(20);
+    }
+    
+    return 0;
+}
+
+void generate_random_string(char *dest, size_t length) {
+    const char charset[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"; // 字符集
+    size_t charset_size = sizeof(charset) - 1; // 不包括末尾的 '\0'
+
+    // 生成随机字符串并存储到 dest 中
+    for (size_t i = 0; i < length - 1; ++i) { // 留出最后一个字符的位置给 '\0'
+        dest[i] = charset[rand() % charset_size];
+    }
+
+    dest[length - 1] = '\0'; // 添加字符串结束符
+    fprintf(stdout, "generate string: %s", dest);
+}
+
+int move_msg_to_outqueue(jia_msg_t *msg, msg_queue_t *outqueue) {
+    int ret = enqueue(outqueue, msg);
+    if (ret == -1) {
+        perror("enqueue");
+        return ret;
+    }
     return 0;
 }

@@ -1,18 +1,15 @@
 #include <semaphore.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdatomic.h>
+#include <pthread.h>
 #include <infiniband/verbs.h>
 #include "rdma_comm.h"
+#include "msg_queue.h"
 
-// 处理接收完成的函数
-static void handle_recv_completion(struct ibv_wc *wc) {
-    if (wc->status != IBV_WC_SUCCESS) {
-        printf("Recv completion failed with status: %d\n", wc->status);
-        return;
-    }
-    // 通知打印线程有新数据到达
-    sem_post(&recv_sem);
-}
+extern pthread_cond_t cond_server;
+pthread_cond_t cond_listen = PTHREAD_COND_INITIALIZER;
+pthread_mutex_t lock_listen = PTHREAD_MUTEX_INITIALIZER;
 
 // 下发接收WR的线程函数
 void* rdma_listen_thread(void *arg) {
@@ -22,6 +19,12 @@ void* rdma_listen_thread(void *arg) {
     int i, ret;
     
     while (1) {
+        pthread_mutex_lock(&lock_listen);
+
+        if (atomic_load(&(inqueue.free_value)) < batching_num) {
+            pthread_cond_wait(&cond_listen, &lock_listen);
+        }
+
         // 准备一批接收WR
         for (i = 0; i < batching_num; i++) {
             sge_list[i].addr = (uint64_t)in_mr[i]->addr;
@@ -45,7 +48,7 @@ void* rdma_listen_thread(void *arg) {
         // 等待接收完成
         int recv_num = 0;
         while (recv_num < batching_num) {
-            ret = ibv_poll_cq(cm_id_array[1].recv_cq, 1, &wc);
+            ret = ibv_poll_cq(cm_id_array[1].qp->recv_cq, 1, &wc);
             if (ret < 0) {
                 printf("Failed to poll CQ\n");
                 continue;
@@ -53,10 +56,19 @@ void* rdma_listen_thread(void *arg) {
                 continue;
             }
             
-            // 处理接收完成
-            handle_recv_completion(&wc);
+            if (wc.status != IBV_WC_SUCCESS) {
+                printf("Recv completion failed with status: %d\n", wc.status);
+            }
             recv_num++;
         }
+        atomic_fetch_sub(&(inqueue.free_value), batching_num);
+        atomic_fetch_add(&(inqueue.busy_value), batching_num);
+
+        if (atomic_load(&(inqueue.busy_value)) > 0) {
+            pthread_cond_signal(&cond_server);
+        }
+
+        pthread_mutex_unlock(&lock_listen);
     }
     
     free(wr_list);

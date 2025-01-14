@@ -3,7 +3,7 @@
 
 #include <pthread.h>
 
-struct connection {
+struct connection { // 暂未使用
     struct rdma_cm_id *id;
     struct ibv_qp *qp;
     int connected;
