@@ -12,10 +12,15 @@ INCLUDE_DIR = include
 # 源文件目录
 SRC_DIR = src
 RDMA_SRC_DIR = rdma-mesh
+RDMA_THREAD_DIR = rdma-thread
 
 # 源文件
 SRCS = $(SRC_DIR)/main.c \
        $(RDMA_SRC_DIR)/rdma_mesh.c \
+	   $(RDMA_THREAD_DIR)/rdma_client.c \
+	   $(RDMA_THREAD_DIR)/rdma_common.c \
+	   $(RDMA_THREAD_DIR)/rdma_listen.c \
+	   $(RDMA_THREAD_DIR)/rdma_server.c \
 
 # 目标文件
 OBJS = $(SRCS:.c=.o)
