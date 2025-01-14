@@ -2,9 +2,9 @@
 #define TOOLS_H
 #include "rdma_comm.h"
 #pragma once
-#include <stdio.h>
 #include <infiniband/verbs.h>
 #include <pthread.h>
+#include <stdio.h>
 
 #define SIZE 16
 
@@ -38,12 +38,12 @@ static const char *mainstr = "[Thread  main]";
 
 #define log_err(STR, ...)                                                      \
     do {                                                                       \
-        const char *str;                                                             \
-        if (pthread_self() == rdma_client_tid) {                                    \
+        const char *str;                                                       \
+        if (pthread_self() == rdma_client_tid) {                               \
             str = clientstr;                                                   \
-        } else if (pthread_self() == rdma_server_tid) {                             \
+        } else if (pthread_self() == rdma_server_tid) {                        \
             str = serverstr;                                                   \
-        } else if (pthread_self() == rdma_listen_tid) {                             \
+        } else if (pthread_self() == rdma_listen_tid) {                        \
             str = listenstr;                                                   \
         } else {                                                               \
             str = mainstr;                                                     \
@@ -56,19 +56,18 @@ static const char *mainstr = "[Thread  main]";
 
 #define log_info(level, STR, ...)                                              \
     if (verbose_log >= level) {                                                \
-        const char *str;                                                             \
-        if (pthread_self() == rdma_client_tid) {                                    \
+        const char *str;                                                       \
+        if (pthread_self() == rdma_client_tid) {                               \
             str = clientstr;                                                   \
-        } else if (pthread_self() == rdma_server_tid) {                             \
+        } else if (pthread_self() == rdma_server_tid) {                        \
             str = serverstr;                                                   \
-        } else if (pthread_self() == rdma_listen_tid) {                             \
+        } else if (pthread_self() == rdma_listen_tid) {                        \
             str = listenstr;                                                   \
         } else {                                                               \
             str = mainstr;                                                     \
         }                                                                      \
-        fprintf(logfile, "[INFO] %s (%s:%d:%s) " STR "\n",         \
-                str, __FILE__, __LINE__, __func__,         \
-                ##__VA_ARGS__);                                                \
+        fprintf(logfile, "[INFO] %s (%s:%d:%s) " STR "\n", str, __FILE__,      \
+                __LINE__, __func__, ##__VA_ARGS__);                            \
     }
 
 #define log_out(level, STR, ...)                                               \
@@ -83,7 +82,6 @@ static const char *mainstr = "[Thread  main]";
         exit(EXIT_FAILURE);                                                    \
     }
 
-
 static inline int open_logfile(char *filename) {
     logfile = fopen(filename, "w+");
     if (logfile == NULL) {
@@ -93,4 +91,4 @@ static inline int open_logfile(char *filename) {
     return 0;
 }
 
-#endif  /* TOOLS_H */
+#endif /* TOOLS_H */
