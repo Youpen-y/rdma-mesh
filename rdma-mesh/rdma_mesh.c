@@ -15,7 +15,7 @@
 
 #define DEFAULT_PORT 40000
 #define MAX_CONNECTIONS (MAX_HOSTS * (MAX_HOSTS-1) / 2)
-#define MAX_RETRY 80
+#define MAX_RETRY 1000
 
 extern struct host_context ctx;
 
@@ -240,13 +240,12 @@ void *run_client(void *arg) {
                     }
                     if (id) {
                         rdma_destroy_qp(id);
-                        rdma_destroy_id(id);
                     }
                     id = NULL;  // 重置 id
-                    break;
+                    goto next_try;
 
                 case RDMA_CM_EVENT_ESTABLISHED:
-                    printf("Host %d: Connected to host %d\n", ctx.host_id, target_host);
+                    printf("After retried %d connect, Host %d: Connected to host %d\n", retry_count, ctx.host_id, target_host);
                     cm_id_array[target_host] = *(event->id);
                     // 这里可以通过 event->param.conn.private_data 查看 server 返回的私有数据
                     printf("Connection setup with host %d\n", *(int *)event->param.conn.private_data);
@@ -262,8 +261,17 @@ void *run_client(void *arg) {
             }
 
             rdma_ack_cm_event(event);
+        } // while(1)
+
+next_try:
+    if (retry_flag) {
+        if (id) {
+            rdma_destroy_id(id);
+            id = NULL;
         }
+        continue;
     }
+}   // while(retry_flag && retry_count < MAX_RETRY)
 
 cleanup:
     if (id) {

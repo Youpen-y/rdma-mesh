@@ -103,8 +103,8 @@ int main(int argc, char **argv) {
 
     // 注册内存区域
     for (int i = 0; i < MR_SIZE; i++) {
-        in_mr[i] = rdma_reg_msgs(&cm_id_array[ctx.host_id], inqueue[i], 40960);
-        out_mr[i] = rdma_reg_msgs(&cm_id_array[ctx.host_id], outqueue[i], 40960);
+        in_mr[i] = rdma_reg_msgs(&cm_id_array[1], inqueue[i], 40960);
+        out_mr[i] = rdma_reg_msgs(&cm_id_array[1], outqueue[i], 40960);
     }
 
     
