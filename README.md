@@ -86,7 +86,10 @@ generate string: FZ3JDHuuX
 Received data at in_mr[3] address 0x562a316ce000: dX1qAZsVY
 ```
 
-5. clean
+5. debug
+The program is produced by vscode, if you want to debug the program, please note the `"args": ["0", "2"],`/`"args": ["1", "2"]` in launch.json.
+
+6. clean
 ```bash
 make clean
 ```
