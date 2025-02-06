@@ -66,6 +66,12 @@ void free_queue(unsigned char **queue, int size) {
     free(queue);
 }
 
+
+const char *ip_array[2] = {
+    "192.168.103.1",
+    "192.168.103.2"
+};
+
 int main(int argc, char **argv) {
     if (open_logfile("jiajia.log")) {
         log_err("Unable to open jiajia.log");

@@ -30,7 +30,7 @@ Usage
 -----------------------------------------------------------------------------
 As an example program, rdma-mesh only support two hosts. ( Complete version can be found in [jiatest](https://github.com/segzix/jiatest) and [jiajia](https://github.com/Youpen-y/jiajia).)
 
-Macro `MASTER` in Makefile can be used to control the hosts' ip in rdma_mesh.c. So it should be supported by one and disabled by another, and the ip in rdma_mesh.c should be redefined according to your computer's setting.
+`ip_array` in main.c is the ip array of hosts in a cluster, which need to reconfigure according to the cluster's setting.
 
 - clone
 ```bash
