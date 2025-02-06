@@ -18,6 +18,14 @@
 #define MAX_CONNECTIONS (MAX_HOSTS * (MAX_HOSTS - 1) / 2)
 #define MAX_RETRY 1000
 
+#ifdef MASTER
+#define master_ip "192.168.103.1"
+#define slave_ip "192.168.103.2"
+#else
+#define master_ip "192.168.103.2"
+#define slave_ip "192.168.103.1"
+#endif
+
 extern struct host_context ctx;
 
 struct rdma_cm_id cm_id_array[MAX_HOSTS] = {0};
@@ -55,8 +63,7 @@ void *run_server(void *arg) {
     memset(&addr, 0, sizeof(addr));
     addr.sin_family = AF_INET;
     addr.sin_port = htons(DEFAULT_PORT + ctx->host_id);
-    addr.sin_addr.s_addr = inet_addr("192.168.103.1"); // 本机地址
-
+    addr.sin_addr.s_addr = inet_addr("master_ip"); // current host ip
     ret = rdma_bind_addr(listener, (struct sockaddr *)&addr);
     if (ret) {
         fprintf(stderr, "Host %d: Failed to bind address\n", ctx->host_id);
@@ -194,7 +201,7 @@ void *run_client(void *arg) {
         memset(&addr, 0, sizeof(addr));
         addr.sin_family = AF_INET;
         addr.sin_port = htons(DEFAULT_PORT + target_host);
-        addr.sin_addr.s_addr = inet_addr("192.168.103.2");
+        addr.sin_addr.s_addr = inet_addr("slave_ip"); // remote host ip
 
         ret = rdma_resolve_addr(id, NULL, (struct sockaddr *)&addr, 2000);
         if (ret) {

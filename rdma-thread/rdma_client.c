@@ -12,7 +12,7 @@
 
 void *rdma_client_thread(void *arg) {
     struct ibv_wc wc;
-    int i, ret;
+    int ret;
 
     while (1) {
         sem_wait(&(outqueue.busy_count));

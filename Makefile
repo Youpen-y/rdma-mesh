@@ -2,7 +2,7 @@
 CC = gcc
 
 # 编译选项
-CFLAGS = -Wno-unused-variable -Wall -g
+CFLAGS = -Wno-unused-variable -Wall -g -DMASTER
 
 LIBS = -libverbs -lrdmacm -lpthread
 

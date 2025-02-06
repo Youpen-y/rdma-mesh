@@ -68,13 +68,6 @@ void *rdma_listen_thread(void *arg) {
                 pthread_cond_signal(&cond_server);
             }
         }
-        // atomic_fetch_sub(&(inqueue.free_value), batching_num);
-        // atomic_fetch_add(&(inqueue.busy_value), batching_num);
-
-        // if (atomic_load(&(inqueue.busy_value)) > 0) {
-        //     pthread_cond_signal(&cond_server);
-        // }
-
         pthread_mutex_unlock(&lock_listen);
     }
 
