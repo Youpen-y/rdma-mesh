@@ -32,11 +32,11 @@ As an example program, rdma-mesh only support two hosts (master-slave). (_Comple
 
 `ip_array` in main.c is the ip array of hosts in a cluster, which need to reconfigure according to the cluster's setting.
 
-1. clone: clone the program to two hosts
+1. **clone**: clone the program to two hosts
 ```bash
 git clone git@github.com:Youpen-y/rdma-mesh.git
 ```
-2. modify: modify the Makefile `CFLAGS`, one with `-DMASTER` and another without.
+2. **modify**: modify the Makefile `CFLAGS`, one with `-DMASTER` and another without.
 ```Makefile
 # master
 CFLAGS = -Wno-unused-variable -Wall -g -DMASTER
@@ -44,11 +44,11 @@ CFLAGS = -Wno-unused-variable -Wall -g -DMASTER
 # slave
 # CFLAGS = -Wno-unused-variable -Wall -g
 ```
-3. build
+3. **build**
 ```bash
 make
 ```
-4. execute
+4. **execute**
 ```bash
 ./mesh <host_id> <total_hosts>
 
@@ -56,6 +56,7 @@ make
 # slave:  ./mesh 1 2
 ```
 **Example:**
+
 slave
 ```bash
 ./mesh 1 2
@@ -74,6 +75,7 @@ generate string: dX1qAZsVY
 ```
 master
 ```bash
+./mesh 0 2
 After retried 0 connect, Host 0: Connected to host 1
 Connection setup with host 1
 generate string: MsBFoLqk9
@@ -86,10 +88,10 @@ generate string: FZ3JDHuuX
 Received data at in_mr[3] address 0x562a316ce000: dX1qAZsVY
 ```
 
-5. debug
+5. **debug**
 The program is produced by vscode, if you want to debug the program, please note the `"args": ["0", "2"],`/`"args": ["1", "2"]` in launch.json.
 
-6. clean
+6. **clean**
 ```bash
 make clean
 ```
