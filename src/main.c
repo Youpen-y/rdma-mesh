@@ -1,4 +1,3 @@
-// Copyright (c) 2025 Youpen-y. Licensed under MIT.
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
