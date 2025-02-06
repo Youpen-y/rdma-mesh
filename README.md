@@ -90,3 +90,11 @@ Received data at in_mr[3] address 0x562a316ce000: dX1qAZsVY
 ```bash
 make clean
 ```
+
+Getting Help
+-----------------------------------------------------------------------------
+The best way to ask questions is to submit an issue on GitHub.
+
+Contributing
+-----------------------------------------------------------------------------
+Welcome any bug fix and feature extension. Have other thing to discuss, welcome to contact! ([yongy2022@outlook.com]())
