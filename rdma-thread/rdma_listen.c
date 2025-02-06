@@ -1,5 +1,6 @@
 #include "msg_queue.h"
 #include "rdma_comm.h"
+#include "rdma_mesh.h"
 #include <infiniband/verbs.h>
 #include <pthread.h>
 #include <semaphore.h>
@@ -7,6 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+extern struct host_context ctx;
 extern pthread_cond_t cond_server;
 pthread_cond_t cond_listen = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t lock_listen = PTHREAD_MUTEX_INITIALIZER;
@@ -41,7 +43,7 @@ void *rdma_listen_thread(void *arg) {
 
         // 批量下发接收WR
         struct ibv_recv_wr *bad_wr;
-        ret = ibv_post_recv(cm_id_array[1].qp, wr_list, &bad_wr);
+        ret = ibv_post_recv(cm_id_array[cm_id].qp, wr_list, &bad_wr);
         if (ret) {
             printf("Failed to post recv WR batch\n");
             continue;
@@ -50,7 +52,7 @@ void *rdma_listen_thread(void *arg) {
         // 等待接收完成
         int recv_num = 0;
         while (recv_num < batching_num) {
-            ret = ibv_poll_cq(cm_id_array[1].qp->recv_cq, 1, &wc);
+            ret = ibv_poll_cq(cm_id_array[cm_id].qp->recv_cq, 1, &wc);
             if (ret < 0) {
                 printf("Failed to poll CQ\n");
                 continue;

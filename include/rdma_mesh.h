@@ -3,7 +3,13 @@
 
 #include <pthread.h>
 
-struct connection { // 暂未使用
+#ifdef MASTER
+#define cm_id 1
+#else
+#define cm_id 0
+#endif
+
+struct connection { // not used
     struct rdma_cm_id *id;
     struct ibv_qp *qp;
     int connected;

@@ -15,15 +15,6 @@ typedef struct jia_msg {
     unsigned char data[40928]; /*  */
 } jia_msg_t;
 
-// typedef enum {
-//     SLOT_FREE = 0,  // slot is free
-//     SLOT_BUSY = 1,  // slot is busy
-// } slot_state_t;
-
-// typedef struct slot {
-//     jia_msg_t msg;
-// } slot_t;
-
 typedef struct msg_queue {
     unsigned char **queue; // queue[i] is the addr of a message
     int size;              // size of queue(must be power of 2)

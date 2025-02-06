@@ -14,11 +14,8 @@
 
 // queue capacity
 #define MAX_HOSTS 16
-
 #define QUEUESIZE 16
-
 #define MR_SIZE 16
-
 #define RANDOM_MSG_SIZE 10
 
 FILE *logfile;
@@ -38,34 +35,8 @@ struct host_context ctx = {0};
 
 void generate_random_string(char *dest, size_t length);
 int move_msg_to_outqueue(jia_msg_t *msg, msg_queue_t *outqueue);
-
-unsigned char **creat_queue(int size, int pagesize) {
-    int ret;
-
-    unsigned char **queue =
-        (unsigned char **)malloc(sizeof(unsigned char *) * size);
-    if (queue == NULL) {
-        fprintf(stderr, "Failed to allocated memory for queue!");
-        exit(-1);
-    }
-
-    for (int i = 0; i < size; i++) {
-        ret = posix_memalign((void **)&queue[i], pagesize, 40960);
-        if (ret != 0) {
-            fprintf(stderr, "Allocated queue failed!");
-            exit(-1);
-        }
-    }
-    return queue;
-}
-
-void free_queue(unsigned char **queue, int size) {
-    for (int i = 0; i < size; i++) {
-        free(queue[i]);
-    }
-    free(queue);
-}
-
+unsigned char **creat_queue(int size, int pagesize);
+void free_queue(unsigned char **queue, int size);
 
 const char *ip_array[2] = {
     "192.168.103.1",
@@ -126,8 +97,8 @@ int main(int argc, char **argv) {
 
     // 注册内存区域
     for (int i = 0; i < MR_SIZE; i++) {
-        in_mr[i] = rdma_reg_msgs(&cm_id_array[1], inqueue.queue[i], 40960);
-        out_mr[i] = rdma_reg_msgs(&cm_id_array[1], outqueue.queue[i], 40960);
+        in_mr[i] = rdma_reg_msgs(&cm_id_array[cm_id], inqueue.queue[i], 40960);
+        out_mr[i] = rdma_reg_msgs(&cm_id_array[cm_id], outqueue.queue[i], 40960);
     }
 
     if (sem_init(&recv_sem, 0, 0) != 0) {
@@ -181,4 +152,31 @@ int move_msg_to_outqueue(jia_msg_t *msg, msg_queue_t *outqueue) {
         return ret;
     }
     return 0;
+}
+
+unsigned char **creat_queue(int size, int pagesize) {
+    int ret;
+
+    unsigned char **queue =
+        (unsigned char **)malloc(sizeof(unsigned char *) * size);
+    if (queue == NULL) {
+        fprintf(stderr, "Failed to allocated memory for queue!");
+        exit(-1);
+    }
+
+    for (int i = 0; i < size; i++) {
+        ret = posix_memalign((void **)&queue[i], pagesize, 40960);
+        if (ret != 0) {
+            fprintf(stderr, "Allocated queue failed!");
+            exit(-1);
+        }
+    }
+    return queue;
+}
+
+void free_queue(unsigned char **queue, int size) {
+    for (int i = 0; i < size; i++) {
+        free(queue[i]);
+    }
+    free(queue);
 }

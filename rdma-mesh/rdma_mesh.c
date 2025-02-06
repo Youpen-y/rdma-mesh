@@ -263,7 +263,7 @@ void *run_client(void *arg) {
 
             case RDMA_CM_EVENT_REJECTED: // 当 client 早于远端 server
                                          // 建立时，返回 RDMA_CM_EVENT_REJECTED
-                printf("Connect to host %d failed, event: %s", target_host,
+                printf("[%d]Connect to host %d failed, event: %s\n", retry_count, target_host,
                        rdma_event_str(event->event));
                 // if connected failed, release the qp and id (need to
                 // reconsider)
@@ -302,13 +302,13 @@ void *run_client(void *arg) {
 
     next_try:
         if (retry_flag) {
-            if (id) {
-                rdma_destroy_id(id);
-                id = NULL;
-            }
             continue;
         }
     } // while(retry_flag && retry_count < MAX_RETRY)
+    if (retry_count == MAX_RETRY) {
+        printf("Connect failed, try to up the retry count\n");
+        exit(-1);
+    }
 
 cleanup:
     if (ec) {
