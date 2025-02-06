@@ -1,5 +1,6 @@
 #include "msg_queue.h"
 #include "rdma_comm.h"
+#include "rdma_mesh.h"
 #include <infiniband/verbs.h>
 #include <pthread.h>
 #include <semaphore.h>
@@ -29,7 +30,7 @@ void *rdma_client_thread(void *arg) {
                                       .send_flags = IBV_SEND_SIGNALED};
 
         struct ibv_send_wr *bad_wr;
-        ret = ibv_post_send(cm_id_array[1].qp, &send_wr, &bad_wr);
+        ret = ibv_post_send(cm_id_array[cm_id].qp, &send_wr, &bad_wr);
         if (ret) {
             printf("Failed to post send WR batch\n");
             continue;
@@ -37,7 +38,7 @@ void *rdma_client_thread(void *arg) {
 
         // 等待发送完成
         while (1) {
-            ret = ibv_poll_cq(cm_id_array[1].qp->send_cq, 1, &wc);
+            ret = ibv_poll_cq(cm_id_array[cm_id].qp->send_cq, 1, &wc);
             if (ret < 0) {
                 printf("Failed to poll send CQ\n");
                 continue;
