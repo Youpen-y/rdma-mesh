@@ -1,3 +1,4 @@
+// Copyright (c) 2025 Youpen-y. Licensed under MIT.
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
