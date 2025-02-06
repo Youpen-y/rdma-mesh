@@ -1,19 +1,20 @@
+#include "msg_queue.h"
+#include "rdma_comm.h"
+#include <infiniband/verbs.h>
+#include <pthread.h>
 #include <semaphore.h>
+#include <stdatomic.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdatomic.h>
-#include <pthread.h>
-#include <infiniband/verbs.h>
-#include "rdma_comm.h"
-#include "msg_queue.h"
 
 extern pthread_cond_t cond_server;
 pthread_cond_t cond_listen = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t lock_listen = PTHREAD_MUTEX_INITIALIZER;
 
 // 下发接收WR的线程函数
-void* rdma_listen_thread(void *arg) {
-    struct ibv_recv_wr *wr_list = malloc(batching_num * sizeof(struct ibv_recv_wr));
+void *rdma_listen_thread(void *arg) {
+    struct ibv_recv_wr *wr_list =
+        malloc(batching_num * sizeof(struct ibv_recv_wr));
     struct ibv_sge *sge_list = malloc(batching_num * sizeof(struct ibv_sge));
     struct ibv_wc wc;
     int i, ret;
@@ -30,14 +31,14 @@ void* rdma_listen_thread(void *arg) {
             sge_list[i].addr = (uint64_t)in_mr[j]->addr;
             sge_list[i].length = in_mr[j]->length;
             sge_list[i].lkey = in_mr[j]->lkey;
-            
+
             wr_list[i].sg_list = &sge_list[i];
             wr_list[i].num_sge = 1;
             wr_list[i].next = (i < batching_num - 1) ? &wr_list[i + 1] : NULL;
             wr_list[i].wr_id = i;
             j = (j + 1) % inqueue.size;
         }
-        
+
         // 批量下发接收WR
         struct ibv_recv_wr *bad_wr;
         ret = ibv_post_recv(cm_id_array[1].qp, wr_list, &bad_wr);
@@ -56,7 +57,7 @@ void* rdma_listen_thread(void *arg) {
             } else if (ret == 0) {
                 continue;
             }
-            
+
             if (wc.status != IBV_WC_SUCCESS) {
                 printf("Recv completion failed with status: %d\n", wc.status);
             }
@@ -76,7 +77,7 @@ void* rdma_listen_thread(void *arg) {
 
         pthread_mutex_unlock(&lock_listen);
     }
-    
+
     free(wr_list);
     free(sge_list);
     return NULL;

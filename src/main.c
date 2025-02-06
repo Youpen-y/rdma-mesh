@@ -1,15 +1,15 @@
+#include "msg_queue.h"
+#include "rdma_comm.h"
+#include "rdma_mesh.h"
+#include "tools.h"
+#include <infiniband/verbs.h>
+#include <pthread.h>
+#include <rdma/rdma_cma.h>
+#include <rdma/rdma_verbs.h>
+#include <semaphore.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <pthread.h>
-#include <semaphore.h>
-#include <infiniband/verbs.h>
-#include <rdma/rdma_cma.h>
-#include <rdma/rdma_verbs.h>
-#include "tools.h"
-#include "rdma_mesh.h"
-#include "rdma_comm.h"
-#include "msg_queue.h"
 
 // queue capacity
 #define MAX_HOSTS 16
@@ -41,7 +41,8 @@ int move_msg_to_outqueue(jia_msg_t *msg, msg_queue_t *outqueue);
 unsigned char **creat_queue(int size, int pagesize) {
     int ret;
 
-    unsigned char **queue = (unsigned char **)malloc(sizeof(unsigned char *) * size);
+    unsigned char **queue =
+        (unsigned char **)malloc(sizeof(unsigned char *) * size);
     if (queue == NULL) {
         fprintf(stderr, "Failed to allocated memory for queue!");
         exit(-1);
@@ -64,9 +65,8 @@ void free_queue(unsigned char **queue, int size) {
     free(queue);
 }
 
-
 int main(int argc, char **argv) {
-    if(open_logfile("jiajia.log")) {
+    if (open_logfile("jiajia.log")) {
         log_err("Unable to open jiajia.log");
         exit(-1);
     }
@@ -95,7 +95,8 @@ int main(int argc, char **argv) {
         for (int i = 0; i < num_clients; i++) {
             int *target_host = (int *)malloc(sizeof(int));
             *target_host = ctx.host_id + i + 1;
-            pthread_create(&ctx.client_threads[i], NULL, run_client, target_host);
+            pthread_create(&ctx.client_threads[i], NULL, run_client,
+                           target_host);
         }
     }
 
@@ -130,9 +131,9 @@ int main(int argc, char **argv) {
     pthread_create(&rdma_listen_tid, NULL, rdma_listen_thread, NULL);
     pthread_create(&rdma_client_tid, NULL, rdma_client_thread, NULL);
     pthread_create(&rdma_server_tid, NULL, rdma_server_thread, NULL);
-    
+
     jia_msg_t msg;
-    while(1) {
+    while (1) {
         msg.frompid = 0;
         msg.topid = 1;
         msg.temp = -1;
@@ -141,16 +142,17 @@ int main(int argc, char **argv) {
         msg.scope = 0;
         msg.size = 16;
         generate_random_string((char *)msg.data, RANDOM_MSG_SIZE);
-        
+
         move_msg_to_outqueue(&msg, &outqueue);
         sleep(1);
     }
-    
+
     return 0;
 }
 
 void generate_random_string(char *dest, size_t length) {
-    const char charset[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"; // 字符集
+    const char charset[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxy"
+                           "z0123456789";      // 字符集
     size_t charset_size = sizeof(charset) - 1; // 不包括末尾的 '\0'
 
     // 获取时间和进程 ID 作为种子

@@ -1,9 +1,9 @@
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <stdatomic.h>
-#include "tools.h"
 #include "msg_queue.h"
+#include "tools.h"
+#include <stdatomic.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #define QUEUESIZE 16
 #define PAGESIZE 4096
@@ -27,7 +27,7 @@ int init_msg_queue(msg_queue_t *msg_queue, int size) {
             fprintf(stderr, "Allocated queue failed!\n");
             exit(-1);
         }
-    }   
+    }
 
     if (msg_queue->queue == NULL) {
         perror("msg_queue malloc");
@@ -97,7 +97,8 @@ int enqueue(msg_queue_t *msg_queue, jia_msg_t *msg) {
         msg_queue->tail = (msg_queue->tail + 1) & (msg_queue->size - 1);
         log_info(4, "%s current tail: %u thread write index: %u", queue,
                  msg_queue->tail, slot_index);
-        memcpy(msg_queue->queue[slot_index], msg, sizeof(jia_msg_t)); // copy msg to slot
+        memcpy(msg_queue->queue[slot_index], msg,
+               sizeof(jia_msg_t)); // copy msg to slot
 
         /* step 2.2: sem post busy count */
         sem_post(&(msg_queue->busy_count));
@@ -138,7 +139,8 @@ int dequeue(msg_queue_t *msg_queue, jia_msg_t *msg) {
         msg_queue->head = (msg_queue->head + 1) & (msg_queue->size - 1);
         log_info(4, "%s current head: %u thread write index: %u", queue,
                  msg_queue->head, slot_index);
-        memcpy(msg, msg_queue->queue[slot_index], sizeof(jia_msg_t)); // copy msg from slot
+        memcpy(msg, msg_queue->queue[slot_index],
+               sizeof(jia_msg_t)); // copy msg from slot
 
         /* step 2.2: sem post free count */
         sem_post(&(msg_queue->free_count));

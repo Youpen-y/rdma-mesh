@@ -17,9 +17,7 @@ struct host_context {
     pthread_t *client_threads;
 };
 
-
 void *run_server(void *arg);
-
 
 void *run_client(void *arg);
 #endif

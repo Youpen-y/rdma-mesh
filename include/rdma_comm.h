@@ -2,8 +2,8 @@
 #define RDMA_COMM_H
 
 #include <pthread.h>
-#include <semaphore.h>
 #include <rdma/rdma_cma.h>
+#include <semaphore.h>
 
 #define MR_SIZE 16
 #define MAX_HOSTS 16
@@ -11,8 +11,6 @@
 extern struct ibv_mr *in_mr[MR_SIZE];
 extern struct ibv_mr *out_mr[MR_SIZE];
 extern struct rdma_cm_id cm_id_array[MAX_HOSTS];
-
-
 
 extern sem_t recv_sem;
 extern int batching_num;
